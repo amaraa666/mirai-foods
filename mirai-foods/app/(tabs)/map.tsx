@@ -86,7 +86,7 @@ export default function MapScreen() {
       <View style={styles.headerSection}>
         <ThemedText type="title" style={styles.title}>Nearby Flash Sales</ThemedText>
         <ThemedText style={styles.subtitle}>
-          Red pins: Expiring in less than 1 hour | Green pins: Active Sale
+          Discover the best deals near you!
         </ThemedText>
 
         <View style={styles.mapContainer}>
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   discountedPrice: {
-    color: '#000',
+    color: '#606C38',
     fontWeight: '700',
     fontSize: 14,
   },

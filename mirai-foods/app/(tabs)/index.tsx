@@ -16,6 +16,7 @@ import { Colors } from "@/constants/theme";
 import { mockProducts, Product } from "@/constants/data";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import Fontisto from "@expo/vector-icons/Fontisto";
+import { useCart } from "@/contexts/CartContext";
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
@@ -28,6 +29,8 @@ export default function HomeScreen() {
 
   const categories = ["Bakery", "Fruits", "Vegetables", "Meat"] as const;
   const topProduct = mockProducts[0];
+  const { addToCart } = useCart();
+
 
   const filteredProducts = mockProducts.filter((product) => {
     const matchesCategory = activeCategory === 'Bakery' ? product.type === 'cake' :
@@ -205,7 +208,7 @@ export default function HomeScreen() {
                   styles.button,
                   { backgroundColor: Colors[colorScheme ?? "light"].tint },
                 ]}
-                onPress={() => router.push("/payment")}
+                onPress={() => { addToCart(topProduct, 1); router.push('/(tabs)/payment'); }}
               >
                 <ThemedText style={styles.buttonText}>Add to Cart</ThemedText>
               </TouchableOpacity>
@@ -345,6 +348,8 @@ const styles = StyleSheet.create({
   topPrice: {
     color: "#606C38",
     marginBottom: 6,
+    fontWeight: '700',
+    fontSize: 16,
   },
   topMetaRow: {
     flexDirection: "row",
@@ -433,9 +438,10 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   mostOrderedPrice: {
-    fontSize: 13,
     color: "#606C38",
     marginBottom: 4,
+    fontWeight: '700',
+    fontSize: 16,
   },
   mostOrderedMeta: {
     fontSize: 11,
