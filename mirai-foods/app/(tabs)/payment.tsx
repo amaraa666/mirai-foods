@@ -16,7 +16,7 @@ export default function PaymentScreen() {
   const { cart, updateQuantity, removeFromCart, getTotal, clearCart } = useCart();
 
   const subtotal = getTotal();
-  const delivery = cart.length > 0 ? 2.0 : 0;
+  const delivery = cart.length > 0 ? 0 : 0;
   const total = Number((subtotal + delivery).toFixed(2));
 
   const handlePayment = () => {
@@ -44,11 +44,11 @@ export default function PaymentScreen() {
           <View key={item.id} style={[styles.itemCard, { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }]}>
             <Image source={{ uri: item.image }} style={styles.itemImage} />
             <TouchableOpacity style={styles.removeIcon} onPress={() => removeFromCart(item.id)}>
-              <Feather name="trash-2" size={20} color="#ff4444" />
+              <Feather name="trash-2" size={20} color="#d32f2f" />
             </TouchableOpacity>
             <View style={styles.itemDetails}>
               <ThemedText type="subtitle" style={styles.itemName}>{item.name}</ThemedText>
-              <ThemedText style={styles.itemDescription}>{item.description}</ThemedText>
+              <ThemedText style={styles.itemLeft}>{item.quantityLeft} left</ThemedText>
               <View style={styles.itemBottom}>
                 <ThemedText style={styles.itemPrice}>${item.discountedPrice.toFixed(2)}</ThemedText>
                 <View style={styles.quantityControls}>
@@ -65,7 +65,7 @@ export default function PaymentScreen() {
           </View>
         ))}
 
-        <View style={[styles.summaryCard, { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }]}> 
+        <View style={[styles.summaryCard, { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }]}>
           <View style={styles.lineItem}><ThemedText>Subtotal</ThemedText><ThemedText>${subtotal.toFixed(2)}</ThemedText></View>
           <View style={styles.lineItem}><ThemedText>Delivery amount</ThemedText><ThemedText>${delivery.toFixed(2)}</ThemedText></View>
           <View style={styles.lineItem}><ThemedText>Total Amount</ThemedText><ThemedText>${total.toFixed(2)}</ThemedText></View>
@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   itemImage: {
-    width: 80,
-    height: 80,
+    width: 150,
+    height: 120,
     borderRadius: 10,
     marginRight: 12,
   },
@@ -109,8 +109,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  itemDescription: {
-    color: '#777',
+  itemLeft: {
+    color: '#d32f2f',
+    fontWeight: 'bold',
     marginVertical: 4,
   },
   itemBottom: {
@@ -177,4 +178,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  removeIcon: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    position: 'absolute',
+    right: 5,
+    top: 10
+  }
 });

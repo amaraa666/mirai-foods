@@ -31,10 +31,10 @@ export default function HomeScreen() {
 
   const filteredProducts = mockProducts.filter((product) => {
     const matchesCategory = activeCategory === 'Bakery' ? product.type === 'cake' :
-                           activeCategory === 'Fruits' ? product.type === 'pastry' :
-                           activeCategory === 'Vegetables' ? product.type === 'sandwich' : true;
+      activeCategory === 'Fruits' ? product.type === 'pastry' :
+        activeCategory === 'Vegetables' ? product.type === 'sandwich' : true;
     const matchesSearch = searchQuery === '' || product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
+      product.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -50,32 +50,27 @@ export default function HomeScreen() {
         ]}
         onPress={() => router.push(`/product/${item.id}`)}
       >
-        <View style={styles.mostOrderedImageWrapper}>
-          <Image source={{ uri: item.image }} style={styles.mostOrderedImage} />
-          <View style={styles.imageBadges}>
-            <ThemedText style={styles.pinRemaining}>
-              Left {item.quantityLeft}
+        <Image source={{ uri: item.image }} style={[styles.pinImage, { width: '100%', height: 120 }]} />
+        <View style={styles.pinBadgeContainer}>
+          <ThemedText style={styles.pinRemaining}>Left {item.quantityLeft}</ThemedText>
+          <ThemedText style={styles.pinDiscount}>{item.discountPercentage}% off</ThemedText>
+        </View>
+        <View style={styles.topInfo}>
+          <ThemedText style={styles.mostOrderedName}>{item.name}</ThemedText>
+          <View style={styles.priceRow}>
+            <ThemedText style={styles.originalPrice}>
+              ${item.originalPrice}
             </ThemedText>
-            <ThemedText
-              style={[styles.imageBadgeText, styles.discountBadgeText]}
-            >
-              -{item.discountPercentage}%
+            <ThemedText style={styles.mostOrderedPrice}>
+              ${item.discountedPrice}
             </ThemedText>
           </View>
+          <ThemedText style={[styles.mostOrderedMeta, styles.discountBadgeText]}>
+            Ends in: {hours}h {minutes}m
+          </ThemedText>
         </View>
 
-        <ThemedText style={styles.mostOrderedName}>{item.name}</ThemedText>
-        <View style={styles.priceRow}>
-          <ThemedText style={styles.originalPrice}>
-            ${item.originalPrice}
-          </ThemedText>
-          <ThemedText style={styles.mostOrderedPrice}>
-            ${item.discountedPrice}
-          </ThemedText>
-        </View>
-        <ThemedText style={[styles.mostOrderedMeta, styles.discountBadgeText]}>
-          Ends in: {hours}h {minutes}m
-        </ThemedText>
+
       </TouchableOpacity>
     );
   };
@@ -390,10 +385,9 @@ const styles = StyleSheet.create({
   },
   mostOrderedCard: {
     width: 170,
-    height: 180,
+    height: 250,
     marginRight: 10,
     borderRadius: 14,
-    padding: 10,
     justifyContent: "space-between",
   },
   mostOrderedImage: {
@@ -401,6 +395,37 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 10,
     marginBottom: 8,
+  },
+  pinContainer: {
+    width: '100%',
+    height: 220,
+    borderRadius: 14,
+    padding: 0,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  pinImage: {
+    width: '100%',
+    height: 140,
+  },
+  pinBadgeContainer: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pinDiscount: {
+    color: '#d32f2f',
+    fontWeight: 'bold',
+    fontSize: 12,
+    backgroundColor: '#ffffffcc',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
   mostOrderedName: {
     fontSize: 13,

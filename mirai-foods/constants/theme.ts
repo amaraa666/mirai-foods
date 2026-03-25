@@ -11,7 +11,7 @@ const tintColorDark = '#ddd'; // Cream
 export const Colors = {
   light: {
     background: '#FFFBF2',
-    text: '#432818',
+    text: '#',
     tint: '#606C38',
     icon: '#9BA1A6',
     tabIconDefault: '#687076',

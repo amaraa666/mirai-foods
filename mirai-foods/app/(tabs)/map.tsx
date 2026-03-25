@@ -1,4 +1,4 @@
-import { StyleSheet, FlatList, TouchableOpacity, View, ScrollView } from 'react-native';import { Image } from 'expo-image';import { useRouter } from 'expo-router';
+import { StyleSheet, FlatList, TouchableOpacity, View, ScrollView } from 'react-native'; import { Image } from 'expo-image'; import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import { useEffect, useState } from 'react';
@@ -32,30 +32,38 @@ export default function MapScreen() {
     })();
   }, []);
 
-  const renderProductPin = (numColumns = 2) => ({ item }: { item: Product }) => (
-    <TouchableOpacity
-      style={[
-        styles.pinContainer,
-        { width: numColumns === 2 ? '48%' : '100%', backgroundColor: Colors[colorScheme ?? 'light'].cardBackground },
-      ]}
-      onPress={() => router.push(`/product/${item.id}`)}
-    >
-      <Image source={{ uri: item.image }} style={[styles.pinImage, { width: '100%', height: 120 }]} />
-      <View style={styles.pinBadgeContainer}>
-        <ThemedText style={styles.pinRemaining}>Left {item.quantityLeft}</ThemedText>
-        <ThemedText style={styles.pinDiscount}>{item.discountPercentage}% off</ThemedText>
-      </View>
-      <ThemedText style={styles.pinText}>{item.name}</ThemedText>
-      <View style={styles.priceRow}>
-        <ThemedText style={styles.originalPrice}>${item.originalPrice}</ThemedText>
-        <ThemedText style={styles.discountedPrice}>${item.discountedPrice}</ThemedText>
-      </View>
-      <ThemedText style={styles.pinDescription} numberOfLines={2}>{item.description}</ThemedText>
-      <View style={styles.pinMetaRow}>
-        <ThemedText style={styles.pinMeta}>{item.expiringInHours < 1 ? 'Expiring soon' : 'Sale active'}</ThemedText>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderProductPin = (numColumns = 2) => ({ item }: { item: Product }) => {
+    const hours = Math.floor(item.expiringInHours);
+    const minutes = Math.max(0, Math.round((item.expiringInHours % 1) * 60));
+    return (
+
+      <TouchableOpacity
+        style={[
+          styles.pinContainer,
+          { width: numColumns === 2 ? '48%' : '100%', backgroundColor: Colors[colorScheme ?? 'light'].cardBackground },
+        ]}
+        onPress={() => router.push(`/product/${item.id}`)}
+      >
+        <Image source={{ uri: item.image }} style={[styles.pinImage, { width: '100%', height: 120 }]} />
+        <View style={styles.pinBadgeContainer}>
+          <ThemedText style={styles.pinRemaining}>Left {item.quantityLeft}</ThemedText>
+          <ThemedText style={styles.pinDiscount}>{item.discountPercentage}% off</ThemedText>
+        </View>
+        <View style={{ paddingHorizontal: 10 , height: 110, justifyContent: 'space-between', paddingVertical: 8}}>
+          <ThemedText style={styles.pinText}>{item.name}</ThemedText>
+          <View style={styles.priceRow}>
+            <ThemedText style={styles.originalPrice}>${item.originalPrice}</ThemedText>
+            <ThemedText style={styles.discountedPrice}>${item.discountedPrice}</ThemedText>
+          </View>
+          <ThemedText style={[styles.mostOrderedMeta, styles.discountBadgeText]}>
+            Ends in: {hours}h {minutes}m
+          </ThemedText>
+        </View>
+
+      </TouchableOpacity>
+    );
+  }
+
 
   const initialRegion = location ? {
     latitude: location.coords.latitude,
@@ -158,11 +166,10 @@ const styles = StyleSheet.create({
   },
   pinContainer: {
     width: '100%',
-    height: 220,
+    height: 250,
     borderRadius: 14,
     padding: 0,
     backgroundColor: '#fff',
-    overflow: 'hidden',
     marginBottom: 12,
   },
   pinImage: {
@@ -186,11 +193,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pinText: {
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'left',
-    marginTop: 10,
-    marginHorizontal: 12,
+       fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 2,
   },
   pinDescription: {
     fontSize: 13,
@@ -234,8 +239,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
-    marginTop: 4,
-    marginHorizontal: 12,
   },
   originalPrice: {
     color: '#999',
@@ -260,6 +263,16 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     paddingBottom: 16,
+  },
+  mostOrderedMeta: {
+    fontSize: 11,
+    color: "#555",
+    marginTop: 1,
+    lineHeight: 14,
+  },
+  discountBadgeText: {
+    color: "#cb2b2b",
+    fontWeight: "bold",
   },
   fullWidthList: {
     paddingHorizontal: 0,
