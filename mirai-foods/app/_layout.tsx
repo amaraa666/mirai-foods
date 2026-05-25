@@ -3,26 +3,32 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CartProvider } from "@/contexts/CartContext";
-import { View } from "react-native";
 export const unstable_settings = {
-  anchor: "(tabs)",
+  anchor: "index",
 };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const pathname = usePathname();
+  const isDarkHero = pathname === "/" || pathname === "/login";
+  const statusBarStyle =
+    isDarkHero ? "light" : colorScheme === "dark" ? "light" : "dark";
 
   return (
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <CartProvider>
-          <Stack>
+          <Stack initialRouteName="index">
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="signup" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="modal"
@@ -30,7 +36,7 @@ export default function RootLayout() {
             />
           </Stack>
         </CartProvider>
-        <StatusBar  style={colorScheme === "dark" ? "light" : "dark"} />
+        <StatusBar style={statusBarStyle} />
       </ThemeProvider>
     </SafeAreaProvider>
   );

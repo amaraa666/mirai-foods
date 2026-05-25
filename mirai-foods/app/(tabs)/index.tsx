@@ -2,461 +2,373 @@ import { Image } from "expo-image";
 import {
   StyleSheet,
   TextInput,
-  FlatList,
   TouchableOpacity,
   View,
   ScrollView,
+  Text,
 } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Feather from "@expo/vector-icons/Feather";
+import { places } from "@/constants/data";
 
-import { ThemedText } from "@/components/themed-text";
-import { Colors } from "@/constants/theme";
-import { mockProducts, Product } from "@/constants/data";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import Fontisto from "@expo/vector-icons/Fontisto";
-import { useCart } from "@/contexts/CartContext";
+const BG = "#FAF7F4";
+const CARD_BG = "#FFFFFF";
+const TEXT_PRIMARY = "#1a1a1a";
+const TEXT_SECONDARY = "#888";
+const BADGE_BG = "rgba(255,255,255,0.92)";
+const BADGE_TEXT = "#3B0914";
+const ACCENT = "#3B0914";
+
+const bakeries = [
+  {
+    id: "b1",
+    name: "L'Artisan Boulangerie",
+    price: 12.0,
+    discount: 25,
+    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&q=80",
+    place: places[0],
+  },
+  {
+    id: "b2",
+    name: "Golden Wheat Co.",
+    price: 8.5,
+    discount: 25,
+    image: "https://images.unsplash.com/photo-1555507036-ab1f4038024a?w=800&q=80",
+    place: places[1],
+  },
+  {
+    id: "b3",
+    name: "Petite Pâtisserie",
+    price: 15.0,
+    discount: 30,
+    image: "https://images.unsplash.com/photo-1612203985729-70726954388c?w=800&q=80",
+    place: places[2],
+  },
+  {
+    id: "b4",
+    name: "Sweet Fiora",
+    price: 18.0,
+    discount: 50,
+    image: "https://images.unsplash.com/photo-1614707267537-b85aaf00c4b7?w=800&q=80",
+    place: places[3],
+  },
+  {
+    id: "b5",
+    name: "Nordic Bakes",
+    price: 22.0,
+    discount: 20,
+    image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&q=80",
+    place: places[4],
+  },
+];
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<
-    "Bakery" | "Fruits" | "Vegetables" | "Meat"
-  >("Bakery");
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const categories = ["Bakery", "Fruits", "Vegetables", "Meat"] as const;
-  const topProduct = mockProducts[0];
-  const { addToCart } = useCart();
+  const filtered = searchQuery
+    ? bakeries.filter((b) =>
+        b.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : bakeries;
 
-
-  const filteredProducts = mockProducts.filter((product) => {
-    const matchesCategory = activeCategory === 'Bakery' ? product.type === 'cake' :
-      activeCategory === 'Fruits' ? product.type === 'pastry' :
-        activeCategory === 'Vegetables' ? product.type === 'sandwich' : true;
-    const matchesSearch = searchQuery === '' || product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const renderMostOrdered = ({ item }: { item: Product }) => {
-    const hours = Math.floor(item.expiringInHours);
-    const minutes = Math.max(0, Math.round((item.expiringInHours % 1) * 60));
-
-    return (
-      <TouchableOpacity
-        style={[
-          styles.mostOrderedCard,
-          { backgroundColor: Colors[colorScheme ?? "light"].cardBackground },
-        ]}
-        onPress={() => router.push(`/product/${item.id}`)}
-      >
-        <Image source={{ uri: item.image }} style={[styles.pinImage, { width: '100%', height: 120 }]} />
-        <View style={styles.pinBadgeContainer}>
-          <ThemedText style={styles.pinRemaining}>Left {item.quantityLeft}</ThemedText>
-          <ThemedText style={styles.pinDiscount}>{item.discountPercentage}% off</ThemedText>
-        </View>
-        <View style={styles.topInfo}>
-          <ThemedText style={styles.mostOrderedName}>{item.name}</ThemedText>
-          <View style={styles.priceRow}>
-            <ThemedText style={styles.originalPrice}>
-              ${item.originalPrice}
-            </ThemedText>
-            <ThemedText style={styles.mostOrderedPrice}>
-              ${item.discountedPrice}
-            </ThemedText>
-          </View>
-          <ThemedText style={[styles.mostOrderedMeta, styles.discountBadgeText]}>
-            Ends in: {hours}h {minutes}m
-          </ThemedText>
-        </View>
-
-
-      </TouchableOpacity>
-    );
-  };
+  const firstHalf = filtered.slice(0, 3);
+  const secondHalf = filtered.slice(3);
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: Colors[colorScheme ?? "light"].background,
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom,
-      }}
-    >
+    <View style={[styles.root, { paddingTop: insets.top }]}>
       <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          { paddingBottom: insets.bottom + 100 },
-        ]}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
-          <View>
-            <ThemedText type="subtitle" style={styles.smallText}>
-              Good Morning
-            </ThemedText>
-            <ThemedText type="title" style={styles.headerTitle}>
-              Tania William
-            </ThemedText>
-          </View>
-          <TouchableOpacity
-            style={[styles.circleButton, { backgroundColor: "#f5f5f5" }]}
-            onPress={() => router.push("/notifications")}
-          >
-            <ThemedText>
-              <Fontisto name="bell" size={24} color="black" />
-            </ThemedText>
-          </TouchableOpacity>
-        </View>
-
-        <TextInput
-          style={[
-            styles.searchBar,
-            {
-              backgroundColor: "#f5f5f5",
-              color: Colors[colorScheme ?? "light"].text,
-            },
-          ]}
-          placeholder="Search your product"
-          placeholderTextColor={Colors[colorScheme ?? "light"].icon}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoryRow}
-        >
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category}
-              style={[
-                styles.categoryChip,
-                activeCategory === category ? styles.categoryChipActive : null,
-              ]}
-              onPress={() => setActiveCategory(category)}
-            >
-              <ThemedText
-                style={
-                  activeCategory === category
-                    ? styles.categoryTextActive
-                    : styles.categoryText
-                }
-              >
-                {category}
-              </ThemedText>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {topProduct && (
-          <TouchableOpacity
-            style={[
-              styles.topProductCard,
-              {
-                backgroundColor: Colors[colorScheme ?? "light"].cardBackground,
-              },
-            ]}
-            onPress={() => router.push(`/product/${topProduct.id}`)}
-          >
-            <View style={styles.topImageWrapper}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.avatar}>
               <Image
-                source={{ uri: topProduct.image }}
-                style={styles.topImage}
+                source={{ uri: "https://i.pravatar.cc/100" }}
+                style={styles.avatarImage}
               />
-              <View style={styles.imageBadges}>
-                <ThemedText style={styles.imageBadgeText}>
-                  Left {topProduct.quantityLeft}
-                </ThemedText>
-                <ThemedText
-                  style={[styles.imageBadgeText, styles.discountBadgeText]}
-                >
-                  -{topProduct.discountPercentage}%
-                </ThemedText>
-              </View>
             </View>
-            <View style={styles.topInfo}>
-              <ThemedText type="title" style={styles.topName} numberOfLines={1}>
-                {topProduct.name}
-              </ThemedText>
-              <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <ThemedText style={styles.originalPrice}>
-                  ${topProduct.originalPrice}
-                </ThemedText>
-                <ThemedText style={styles.topPrice}>
-                  ${topProduct.discountedPrice}.00
-                </ThemedText>
-              </View>
-
-              <View style={styles.topMetaRow}>
-                <ThemedText style={[styles.topMeta, styles.discountBadgeText]}>
-                  Ends in {Math.floor(topProduct.expiringInHours)}h{" "}
-                  {Math.max(
-                    0,
-                    Math.round((topProduct.expiringInHours % 1) * 60),
-                  )}
-                  m
-                </ThemedText>
-              </View>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  { backgroundColor: Colors[colorScheme ?? "light"].tint },
-                ]}
-                onPress={() => { addToCart(topProduct, 1); router.push('/(tabs)/payment'); }}
-              >
-                <ThemedText style={styles.buttonText}>Add to Cart</ThemedText>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        )}
-
-        <View style={styles.sectionHeader}>
-          <ThemedText type="title" style={styles.sectionTitle}>
-            Most Ordered
-          </ThemedText>
-          <TouchableOpacity onPress={() => router.push("/map")}>
-            <ThemedText style={styles.sectionAction}>Explore All</ThemedText>
+            <Text style={styles.brandName}>Savor</Text>
+          </View>
+          <TouchableOpacity style={styles.bellBtn}>
+            <Feather name="bell" size={22} color={TEXT_PRIMARY} />
           </TouchableOpacity>
         </View>
 
-        <FlatList
-          data={filteredProducts}
-          renderItem={renderMostOrdered}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.mostOrderedList}
-          scrollEnabled={true}
-        />
+        {/* Search */}
+        <View style={styles.searchWrapper}>
+          <Feather
+            name="search"
+            size={18}
+            color={TEXT_SECONDARY}
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search for artisanal bakeries..."
+            placeholderTextColor="#bbb"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        {/* Daily Curation */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Daily Curation</Text>
+          <Text style={styles.sectionLocation}>NEW YORK, NY</Text>
+        </View>
+
+        {/* First batch of cards */}
+        {firstHalf.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.card}
+            activeOpacity={0.9}
+            onPress={() =>
+              item.place?.products[0] &&
+              router.push(`/product/${item.place.products[0].id}`)
+            }
+          >
+            <View style={styles.imageWrapper}>
+              <Image
+                source={{ uri: item.image }}
+                style={styles.cardImage}
+                contentFit="cover"
+              />
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>{item.discount}% OFF</Text>
+              </View>
+            </View>
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardName}>{item.name}</Text>
+              <Text style={styles.cardPrice}>
+                ${item.price.toFixed(2)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+
+        {/* Twilight Treats Banner */}
+        <TouchableOpacity style={styles.banner} activeOpacity={0.9}>
+          <View style={styles.bannerContent}>
+            <Text style={styles.bannerTitle}>Twilight{"\n"}Treats</Text>
+            <Text style={styles.bannerSub}>save after dusk{"\n"}with us</Text>
+          </View>
+          <View style={styles.bannerBtnWrapper}>
+            <View style={styles.bannerBtn}>
+              <Text style={styles.bannerBtnText}>EXPLORE</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Second batch of cards */}
+        {secondHalf.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.card}
+            activeOpacity={0.9}
+            onPress={() =>
+              item.place?.products[0] &&
+              router.push(`/product/${item.place.products[0].id}`)
+            }
+          >
+            <View style={styles.imageWrapper}>
+              <Image
+                source={{ uri: item.image }}
+                style={styles.cardImage}
+                contentFit="cover"
+              />
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>{item.discount}% OFF</Text>
+              </View>
+            </View>
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardName}>{item.name}</Text>
+              <Text style={styles.cardPrice}>
+                ${item.price.toFixed(2)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
+  root: {
+    flex: 1,
+    backgroundColor: BG,
   },
-  headerRow: {
+
+  // Header
+  header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
-  smallText: {
-    color: "#888",
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: "hidden",
+    backgroundColor: "#e0d5ca",
   },
-  circleButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  avatarImage: {
+    width: 36,
+    height: 36,
+  },
+  brandName: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: TEXT_PRIMARY,
+    letterSpacing: -0.3,
+  },
+  bellBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
   },
-  searchBar: {
-    height: 45,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  categoryRow: {
+
+  // Search
+  searchWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
     marginBottom: 20,
+    backgroundColor: "#F0EBE4",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 46,
   },
-  categoryChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#ddd",
+  searchIcon: {
     marginRight: 10,
   },
-  categoryChipActive: {
-    backgroundColor: "#fff",
-    borderColor: "#f2b9c4",
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: TEXT_PRIMARY,
   },
-  categoryText: {
-    color: "#333",
-  },
-  categoryTextActive: {
-    color: "#000",
-    fontWeight: "bold",
-  },
-  topProductCard: {
-    borderRadius: 16,
-    overflow: "hidden",
-    marginBottom: 24,
-  },
-  topImageWrapper: {
-    position: "relative",
-  },
-  topImage: {
-    width: "100%",
-    height: 260,
-  },
-  mostOrderedImageWrapper: {
-    position: "relative",
-  },
-  imageBadges: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    right: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  pinRemaining: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 11,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  imageBadgeText: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    fontSize: 11,
-    color: "#333",
-    fontWeight: "700",
-  },
-  discountBadgeText: {
-    color: "#cb2b2b",
-    fontWeight: "bold",
-  },
-  topInfo: {
-    padding: 14,
-  },
-  topName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 4,
-  },
-  topPrice: {
-    color: "#606C38",
-    marginBottom: 6,
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  topMetaRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  topMeta: {
-    fontSize: 12,
-    color: "#555",
-  },
+
+  // Section header
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
+    alignItems: "baseline",
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 22,
-    fontWeight: "bold",
+    fontWeight: "700",
+    color: TEXT_PRIMARY,
   },
-  sectionAction: {
-    color: "#a12f5d",
-    fontWeight: "bold",
-  },
-  mostOrderedList: {
-    paddingBottom: 30,
-  },
-  priceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 4,
-  },
-  originalPrice: {
-    color: "#999",
-    textDecorationLine: "line-through",
+  sectionLocation: {
     fontSize: 12,
+    fontWeight: "600",
+    color: TEXT_SECONDARY,
+    letterSpacing: 0.5,
   },
-  mostOrderedCard: {
-    width: 170,
-    height: 250,
-    marginRight: 10,
-    borderRadius: 14,
-    justifyContent: "space-between",
+
+  // Product cards
+  card: {
+    marginHorizontal: 20,
+    marginBottom: 20,
   },
-  mostOrderedImage: {
+  imageWrapper: {
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "#d4a373",
+  },
+  cardImage: {
     width: "100%",
-    height: 120,
-    borderRadius: 10,
-    marginBottom: 8,
+    height: 200,
   },
-  pinContainer: {
-    width: '100%',
-    height: 220,
-    borderRadius: 14,
-    padding: 0,
-    backgroundColor: '#fff',
-    overflow: 'hidden',
-    marginBottom: 12,
+  discountBadge: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    backgroundColor: BADGE_BG,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
-  pinImage: {
-    width: '100%',
-    height: 140,
-  },
-  pinBadgeContainer: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    right: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  pinDiscount: {
-    color: '#d32f2f',
-    fontWeight: 'bold',
+  discountText: {
     fontSize: 12,
-    backgroundColor: '#ffffffcc',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
+    fontWeight: "700",
+    color: BADGE_TEXT,
   },
-  mostOrderedName: {
+  cardInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 10,
+    paddingHorizontal: 4,
+  },
+  cardName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: TEXT_PRIMARY,
+  },
+  cardPrice: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: TEXT_PRIMARY,
+  },
+
+  // Twilight Treats banner
+  banner: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "#2C1810",
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+  },
+  bannerContent: {
+    marginBottom: 16,
+  },
+  bannerTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#E8C9A0",
+    lineHeight: 34,
+  },
+  bannerSub: {
+    fontSize: 13,
+    color: "#C4A07A",
+    marginTop: 6,
+    lineHeight: 18,
+  },
+  bannerBtnWrapper: {
+    alignItems: "flex-start",
+  },
+  bannerBtn: {
+    backgroundColor: "#D4A373",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  bannerBtnText: {
     fontSize: 13,
     fontWeight: "700",
-    marginBottom: 2,
-  },
-  mostOrderedPrice: {
-    color: "#606C38",
-    marginBottom: 4,
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  mostOrderedMeta: {
-    fontSize: 11,
-    color: "#555",
-    marginTop: 1,
-    lineHeight: 14,
-  },
-  button: {
-    marginTop: 10,
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#2C1810",
+    letterSpacing: 1,
   },
 });
