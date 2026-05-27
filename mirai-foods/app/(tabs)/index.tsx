@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import {
+  Alert,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -11,69 +12,47 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
-import { places } from "@/constants/data";
+import { NotificationBell } from "@/components/NotificationBell";
+import { curatedListings } from "@/constants/data";
+import { signOut } from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebase";
 
 const BG = "#FAF7F4";
-const CARD_BG = "#FFFFFF";
 const TEXT_PRIMARY = "#1a1a1a";
 const TEXT_SECONDARY = "#888";
 const BADGE_BG = "rgba(255,255,255,0.92)";
 const BADGE_TEXT = "#3B0914";
-const ACCENT = "#3B0914";
-
-const bakeries = [
-  {
-    id: "b1",
-    name: "L'Artisan Boulangerie",
-    price: 12.0,
-    discount: 25,
-    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&q=80",
-    place: places[0],
-  },
-  {
-    id: "b2",
-    name: "Golden Wheat Co.",
-    price: 8.5,
-    discount: 25,
-    image: "https://images.unsplash.com/photo-1555507036-ab1f4038024a?w=800&q=80",
-    place: places[1],
-  },
-  {
-    id: "b3",
-    name: "Petite Pâtisserie",
-    price: 15.0,
-    discount: 30,
-    image: "https://images.unsplash.com/photo-1612203985729-70726954388c?w=800&q=80",
-    place: places[2],
-  },
-  {
-    id: "b4",
-    name: "Sweet Fiora",
-    price: 18.0,
-    discount: 50,
-    image: "https://images.unsplash.com/photo-1614707267537-b85aaf00c4b7?w=800&q=80",
-    place: places[3],
-  },
-  {
-    id: "b5",
-    name: "Nordic Bakes",
-    price: 22.0,
-    discount: 20,
-    image: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&q=80",
-    place: places[4],
-  },
-];
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
+  const handleLogout = () => {
+    Alert.alert("Log out", "Do you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log out",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await signOut(firebaseAuth);
+            router.replace("/login");
+          } catch (error) {
+            console.warn("[auth] logout failed", error);
+          }
+        },
+      },
+    ]);
+  };
+
   const filtered = searchQuery
-    ? bakeries.filter((b) =>
-        b.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ? curatedListings.filter(
+        (b) =>
+          b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          b.description.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : bakeries;
+    : curatedListings;
 
   const firstHalf = filtered.slice(0, 3);
   const secondHalf = filtered.slice(3);
@@ -87,17 +66,19 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.avatar}>
+            <TouchableOpacity
+              style={styles.avatar}
+              activeOpacity={0.8}
+              onPress={handleLogout}
+            >
               <Image
                 source={{ uri: "https://i.pravatar.cc/100" }}
                 style={styles.avatarImage}
               />
-            </View>
+            </TouchableOpacity>
             <Text style={styles.brandName}>Savor</Text>
           </View>
-          <TouchableOpacity style={styles.bellBtn}>
-            <Feather name="bell" size={22} color={TEXT_PRIMARY} />
-          </TouchableOpacity>
+          <NotificationBell color={TEXT_PRIMARY} size={22} style={styles.bellBtn} />
         </View>
 
         {/* Search */}
@@ -129,10 +110,7 @@ export default function HomeScreen() {
             key={item.id}
             style={styles.card}
             activeOpacity={0.9}
-            onPress={() =>
-              item.place?.products[0] &&
-              router.push(`/product/${item.place.products[0].id}`)
-            }
+            onPress={() => router.push(`/product/${item.productId}`)}
           >
             <View style={styles.imageWrapper}>
               <Image
@@ -141,14 +119,14 @@ export default function HomeScreen() {
                 contentFit="cover"
               />
               <View style={styles.discountBadge}>
-                <Text style={styles.discountText}>{item.discount}% OFF</Text>
+                <Text style={styles.discountText}>
+                  {item.discountPercent}% OFF
+                </Text>
               </View>
             </View>
             <View style={styles.cardInfo}>
-              <Text style={styles.cardName}>{item.name}</Text>
-              <Text style={styles.cardPrice}>
-                ${item.price.toFixed(2)}
-              </Text>
+              <Text style={styles.cardName}>{item.title}</Text>
+              <Text style={styles.cardPrice}>${item.price.toFixed(2)}</Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -172,10 +150,7 @@ export default function HomeScreen() {
             key={item.id}
             style={styles.card}
             activeOpacity={0.9}
-            onPress={() =>
-              item.place?.products[0] &&
-              router.push(`/product/${item.place.products[0].id}`)
-            }
+            onPress={() => router.push(`/product/${item.productId}`)}
           >
             <View style={styles.imageWrapper}>
               <Image
@@ -184,14 +159,14 @@ export default function HomeScreen() {
                 contentFit="cover"
               />
               <View style={styles.discountBadge}>
-                <Text style={styles.discountText}>{item.discount}% OFF</Text>
+                <Text style={styles.discountText}>
+                  {item.discountPercent}% OFF
+                </Text>
               </View>
             </View>
             <View style={styles.cardInfo}>
-              <Text style={styles.cardName}>{item.name}</Text>
-              <Text style={styles.cardPrice}>
-                ${item.price.toFixed(2)}
-              </Text>
+              <Text style={styles.cardName}>{item.title}</Text>
+              <Text style={styles.cardPrice}>${item.price.toFixed(2)}</Text>
             </View>
           </TouchableOpacity>
         ))}

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Product } from '@/constants/data';
+import { Product, getDisplayProduct } from '@/constants/data';
 
 interface CartItem extends Product {
   quantity: number;
@@ -20,17 +20,31 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [cart, setCart] = useState<CartItem[]>([]);
 
   const addToCart = (product: Product, quantity: number) => {
+    const display = getDisplayProduct(product.id);
+    if (!display) return;
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      const existing = prev.find(item => item.id === display.id);
       if (existing) {
         return prev.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: Math.min(item.quantity + quantity, item.quantityLeft) }
+          item.id === display.id
+            ? {
+                ...item,
+                ...display,
+                quantity: Math.min(
+                  item.quantity + quantity,
+                  display.quantityLeft
+                ),
+              }
             : item
         );
-      } else {
-        return [...prev, { ...product, quantity: Math.min(quantity, product.quantityLeft) }];
       }
+      return [
+        ...prev,
+        {
+          ...display,
+          quantity: Math.min(quantity, display.quantityLeft),
+        },
+      ];
     });
   };
 

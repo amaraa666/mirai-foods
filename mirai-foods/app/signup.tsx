@@ -1,5 +1,7 @@
 import { useRouter } from "expo-router";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import {
+  Alert,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +15,8 @@ import {
 import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
+import { firebaseAuth } from "@/lib/firebase";
+import { createUserFirestoreStructure } from "@/services/firestoreStructure";
 
 const PRIMARY = "#3B0914";
 const SUBTITLE = "#666";
@@ -30,6 +34,47 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSignup = async () => {
+    const cleanedName = fullName.trim();
+    const cleanedEmail = email.trim();
+
+    if (!cleanedName || !cleanedEmail || !password.trim()) {
+      Alert.alert("Missing details", "Please fill your name, email, and password.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const result = await createUserWithEmailAndPassword(
+        firebaseAuth,
+        cleanedEmail,
+        password
+      );
+
+      if (cleanedName) {
+        await updateProfile(result.user, { displayName: cleanedName });
+      }
+
+      await createUserFirestoreStructure({
+        uid: result.user.uid,
+        email: result.user.email ?? cleanedEmail,
+        fullName: cleanedName,
+      });
+
+      router.replace("/(tabs)");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Account creation failed. Please try again.";
+      Alert.alert("Signup failed", message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <ImageBackground source={hero} style={styles.root} resizeMode="cover">
@@ -116,9 +161,12 @@ export default function SignupScreen() {
                 styles.button,
                 pressed && styles.buttonPressed,
               ]}
-              onPress={() => router.replace("/(tabs)")}
+              onPress={handleSignup}
+              disabled={isSubmitting}
             >
-              <Text style={styles.buttonText}>Create Account</Text>
+              <Text style={styles.buttonText}>
+                {isSubmitting ? "Creating..." : "Create Account"}
+              </Text>
             </Pressable>
 
             <View style={styles.footerRow}>

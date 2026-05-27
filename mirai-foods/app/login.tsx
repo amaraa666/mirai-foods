@@ -1,5 +1,7 @@
 import { useRouter } from "expo-router";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import {
+  Alert,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -12,6 +14,7 @@ import {
 } from "react-native";
 import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { firebaseAuth } from "@/lib/firebase";
 
 const PRIMARY = "#3B0914";
 const SUBTITLE = "#666";
@@ -28,6 +31,30 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleLogin = async () => {
+    const cleanedEmail = email.trim();
+
+    if (!cleanedEmail || !password.trim()) {
+      Alert.alert("Missing details", "Please enter your email and password.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await signInWithEmailAndPassword(firebaseAuth, cleanedEmail, password);
+      router.replace("/(tabs)");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Sign in failed. Please try again.";
+      Alert.alert("Login failed", message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <ImageBackground source={hero} style={styles.root} resizeMode="cover">
@@ -85,9 +112,12 @@ export default function LoginScreen() {
                 styles.button,
                 pressed && styles.buttonPressed,
               ]}
-              onPress={() => router.replace("/(tabs)")}
+              onPress={handleLogin}
+              disabled={isSubmitting}
             >
-              <Text style={styles.buttonText}>Sign In</Text>
+              <Text style={styles.buttonText}>
+                {isSubmitting ? "Signing in..." : "Sign In"}
+              </Text>
             </Pressable>
 
             <View style={styles.footerRow}>

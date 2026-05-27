@@ -51,6 +51,19 @@ export function Marker({ title, description, onPress }: MarkerProps) {
   );
 }
 
+export type CircleProps = {
+  center?: { latitude: number; longitude: number };
+  radius?: number;
+};
+
+export function Circle() {
+  return null;
+}
+
+export function Polyline() {
+  return null;
+}
+
 const styles = StyleSheet.create({
   map: {
     flex: 1,

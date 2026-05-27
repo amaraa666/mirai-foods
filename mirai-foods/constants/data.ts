@@ -17,6 +17,8 @@ export interface Place {
   id: string;
   name: string;
   address: string;
+  /** Storefront / building photo for seller page */
+  buildingImage?: string;
   location: {
     latitude: number;
     longitude: number;
@@ -27,8 +29,10 @@ export interface Place {
 export const places: Place[] = [
   {
     id: 'p1',
-    name: 'Bono Bakery',
+    name: 'Maison Savor',
     address: '4 Chinggis Ave',
+    buildingImage:
+      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=900&q=80',
     location: { latitude: 47.9138, longitude: 106.9139 },
     products: [
       {
@@ -65,6 +69,8 @@ export const places: Place[] = [
     id: 'p2',
     name: 'Mongolian Bakery',
     address: '13 Peace Ave',
+    buildingImage:
+      'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=900&q=80',
     location: { latitude: 47.9081, longitude: 106.8851 },
     products: [
       {
@@ -101,6 +107,8 @@ export const places: Place[] = [
     id: 'p3',
     name: 'Golden Dough',
     address: '20 Peace Ave',
+    buildingImage:
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=900&q=80',
     location: { latitude: 47.9103, longitude: 106.9163 },
     products: [
       {
@@ -137,6 +145,8 @@ export const places: Place[] = [
     id: 'p4',
     name: 'Cupcake Lounge',
     address: '7 Ulaanbaatar St',
+    buildingImage:
+      'https://images.unsplash.com/photo-1466978913421-0a684ee1bfe5?w=900&q=80',
     location: { latitude: 47.9145, longitude: 106.9247 },
     products: [
       {
@@ -159,6 +169,8 @@ export const places: Place[] = [
     id: 'p5',
     name: 'City Slice Bakery',
     address: '2 Narnii Zam',
+    buildingImage:
+      'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=900&q=80',
     location: { latitude: 47.9213, longitude: 106.9182 },
     products: [
       {
@@ -441,3 +453,191 @@ export const mockProducts: Product[] = places.flatMap((place) =>
     placeId: place.id,
   })),
 );
+
+/** Home feed listings — each links to a real product by productId */
+export interface CuratedListing {
+  id: string;
+  productId: string;
+  title: string;
+  description: string;
+  image: string;
+  price: number;
+  discountPercent: number;
+}
+
+export const curatedListings: CuratedListing[] = [
+  {
+    id: 'listing-1',
+    productId: '1',
+    title: 'Truffle Brioche Club',
+    description:
+      'Triple-creme brie, house-made truffle aioli, and sun-dried tomatoes on toasted brioche.',
+    image:
+      'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=800&q=80',
+    price: 18,
+    discountPercent: 40,
+  },
+  {
+    id: 'listing-2',
+    productId: '3',
+    title: 'Mini Croissants',
+    description: 'Buttery, flaky croissants baked fresh this morning — box of six.',
+    image:
+      'https://images.unsplash.com/photo-1555507036-ab1f4038024a?w=800&q=80',
+    price: 12,
+    discountPercent: 25,
+  },
+  {
+    id: 'listing-3',
+    productId: '5',
+    title: 'Cinnamon Roll Box',
+    description: 'Warm cinnamon rolls with sweet glaze, perfect for sharing.',
+    image:
+      'https://images.unsplash.com/photo-1612203985729-70726954388c?w=800&q=80',
+    price: 15,
+    discountPercent: 30,
+  },
+  {
+    id: 'listing-4',
+    productId: '7',
+    title: 'Red Velvet Cupcake',
+    description: 'Soft red velvet with cream cheese frosting — artisan batch.',
+    image:
+      'https://images.unsplash.com/photo-1614707267537-b85aaf00c4b7?w=800&q=80',
+    price: 18,
+    discountPercent: 50,
+  },
+  {
+    id: 'listing-5',
+    productId: '8',
+    title: 'Cheese Danish',
+    description: 'Buttery pastry with sweet cheese filling, baked to golden perfection.',
+    image:
+      'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&q=80',
+    price: 22,
+    discountPercent: 20,
+  },
+];
+
+export function getCuratedListing(productId: string): CuratedListing | undefined {
+  return curatedListings.find((l) => l.productId === productId);
+}
+
+/** Product IDs shown on the home (main) menu */
+export const mainMenuProductIds = new Set(
+  curatedListings.map((listing) => listing.productId)
+);
+
+export function isMainMenuProduct(productId: string): boolean {
+  return mainMenuProductIds.has(productId);
+}
+
+/** Places that sell at least one main-menu product */
+export function getMainMenuPlaces(): Place[] {
+  return places.filter((place) =>
+    place.products.some((p) => isMainMenuProduct(p.id))
+  );
+}
+
+export function getPlaceById(placeId: string): Place | undefined {
+  return getMainMenuPlaces().find((p) => p.id === placeId);
+}
+
+export function getPlaceBuildingImage(
+  place: Place,
+  fallbackProductImage?: string
+): string | undefined {
+  return place.buildingImage ?? fallbackProductImage;
+}
+
+/** Product merged with curated display fields (same item on home, detail, cart) */
+export function getDisplayProduct(productId: string): Product | undefined {
+  const listing = getCuratedListing(productId);
+  const base = mockProducts.find((p) => p.id === productId);
+  if (!listing || !base) return undefined;
+  return {
+    ...base,
+    name: listing.title,
+    description: listing.description,
+    image: listing.image,
+    discountedPrice: listing.price,
+    discountPercentage: listing.discountPercent,
+    originalPrice: Math.round(
+      (listing.price / (1 - listing.discountPercent / 100)) * 100,
+    ) / 100,
+  };
+}
+
+/** Menu items for a place — main-menu products only */
+export function getPlaceMenuProducts(place: Place): Product[] {
+  return place.products
+    .map((p) => getDisplayProduct(p.id))
+    .filter((p): p is Product => p != null)
+    .sort((a, b) => b.discountPercentage - a.discountPercentage);
+}
+
+export type SearchResult =
+  | {
+      type: "product";
+      id: string;
+      title: string;
+      subtitle: string;
+      image: string;
+      price: number;
+    }
+  | {
+      type: "place";
+      id: string;
+      title: string;
+      subtitle: string;
+      image: string;
+    };
+
+/** Search main-menu sellers and products by name, address, or description */
+export function searchMainMenu(query: string): SearchResult[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
+  const results: SearchResult[] = [];
+
+  for (const place of getMainMenuPlaces()) {
+    const haystack = `${place.name} ${place.address}`.toLowerCase();
+    if (haystack.includes(q)) {
+      const menu = getPlaceMenuProducts(place);
+      results.push({
+        type: "place",
+        id: place.id,
+        title: place.name,
+        subtitle: place.address,
+        image:
+          getPlaceBuildingImage(place, menu[0]?.image) ?? "",
+      });
+    }
+  }
+
+  for (const listing of curatedListings) {
+    const product = getDisplayProduct(listing.productId);
+    if (!product) continue;
+    const place = getPlaceById(product.placeId);
+    const haystack =
+      `${listing.title} ${listing.description} ${product.name} ${place?.name ?? ""}`.toLowerCase();
+    if (haystack.includes(q)) {
+      results.push({
+        type: "product",
+        id: product.id,
+        title: listing.title,
+        subtitle: place ? `${place.name} · $${listing.price.toFixed(2)}` : `$${listing.price.toFixed(2)}`,
+        image: listing.image,
+        price: listing.price,
+      });
+    }
+  }
+
+  const seen = new Set<string>();
+  return results.filter((r) => {
+    const key = `${r.type}-${r.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}

@@ -1,99 +1,235 @@
-import { Image } from 'expo-image';
-import { StyleSheet, TouchableOpacity, View, ScrollView } from 'react-native';
-import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { useState } from 'react';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Colors } from '@/constants/theme';
-import { mockProducts } from '@/constants/data';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useCart } from '@/contexts/CartContext';
+import { Image } from "expo-image";
+import {
+  Platform,
+  StyleSheet,
+  View,
+  ScrollView,
+  Text,
+  Pressable,
+} from "react-native";
+import { useLocalSearchParams, Stack, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Feather from "@expo/vector-icons/Feather";
+import { PickupLocationMap } from "@/components/PickupLocationMap";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { getDisplayProduct, getPlaceById } from "@/constants/data";
+import { useCart } from "@/contexts/CartContext";
+import { formatOfferEnds, formatQuantityLeft } from "@/utils/product";
+
+const NAV_BG = "#E9DAD6";
+const BG = "#FDF8F5";
+const TEXT_PRIMARY = "#2D2926";
+const PRICE_COLOR = "#4A151B";
+const TEXT_SECONDARY = "#757575";
+const HERO_BG = "#FDF8F5";
+const DIVIDER = "#E8E0DA";
 
 export default function ProductDetailScreen() {
-  const { id } = useLocalSearchParams();
-  const colorScheme = useColorScheme();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { addToCart } = useCart();
-  const [quantity, setQuantity] = useState(1);
 
-  const product = mockProducts.find(p => p.id === id);
+  const productId = Array.isArray(id) ? id[0] : id;
+  const product = productId ? getDisplayProduct(productId) : undefined;
+  const place = product ? getPlaceById(product.placeId) : undefined;
 
   if (!product) {
     return (
-      <ThemedView style={styles.container}>
-        <ThemedText>Product not found</ThemedText>
-      </ThemedView>
+      <View style={[styles.root, { paddingTop: insets.top }]}>
+        <Text style={styles.notFound}>Product not found</Text>
+      </View>
     );
   }
+
+  const heroUri = product.image;
+  const offerEnds = formatOfferEnds(product.expiringInHours);
+  const quantityLabel = formatQuantityLeft(product.quantityLeft);
+  const isUrgent = product.expiringInHours > 0 && product.expiringInHours < 1;
+
+  const bakeryName = place?.name ?? "Pickup location";
+  const bakeryAddress = place?.address ?? "Ulaanbaatar";
+
+  const goToSeller = () => {
+    if (place) {
+      router.push(`/place/${place.id}`);
+    }
+  };
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background, paddingTop: insets.top }]}> 
-        <View style={[styles.customHeader , {backgroundColor: Colors[colorScheme ?? 'light'].background,
-}]}>
-          <TouchableOpacity style={styles.customBack} onPress={() => router.back()}>
-            <ThemedText style={styles.customBackText}>
-              <FontAwesome5 name="arrow-left" size={20} color="black" />
-            </ThemedText>
-          </TouchableOpacity>
-          <ThemedText type="title" style={styles.customTitle}>Product Details</ThemedText>
+      <View style={styles.root}>
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.headerSide}>
+            <Pressable
+              onPress={() => router.back()}
+              style={styles.headerBtn}
+              hitSlop={12}
+            >
+              <Feather name="arrow-left" size={22} color={TEXT_PRIMARY} />
+            </Pressable>
+          </View>
+          <Text style={styles.headerBrand}>Savor</Text>
+          <View style={[styles.headerSide, styles.headerRight]}>
+            <View style={styles.headerRightSpacer} />
+          </View>
         </View>
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: insets.bottom + 100 }} showsVerticalScrollIndicator={false}>
-          <View style={styles.productImageWrapper}>
-            <Image source={{ uri: product.image }} style={styles.productImage} />
-            <View style={styles.imageBadges}>
-              <ThemedText style={styles.imageBadgeText}>Left {product.quantityLeft}</ThemedText>
-              <ThemedText style={[styles.imageBadgeText, styles.discountBadgeText]}>-{product.discountPercentage}%</ThemedText>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + 24,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Hero */}
+          <View style={styles.heroWrapper}>
+            <View style={styles.heroInner}>
+              <Image
+                source={{ uri: heroUri }}
+                style={styles.heroImage}
+                contentFit="cover"
+              />
+              <View style={styles.heroBadgesTop}>
+                {offerEnds && (
+                  <View
+                    style={[
+                      styles.timeBadge,
+                      isUrgent && styles.timeBadgeUrgent,
+                    ]}
+                  >
+                    <Feather
+                      name="clock"
+                      size={12}
+                      color="#fff"
+                      style={styles.badgeIcon}
+                    />
+                    <Text style={styles.timeBadgeText}>{offerEnds}</Text>
+                  </View>
+                )}
+                {product.discountPercentage > 0 && (
+                  <View style={styles.discountBadge}>
+                    <Text style={styles.discountBadgeText}>
+                      {product.discountPercentage}% OFF
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {quantityLabel != null && (
+                <View
+                  style={[
+                    styles.stockBadge,
+                    product.quantityLeft <= 0 && styles.stockBadgeSoldOut,
+                  ]}
+                >
+                  <Feather
+                    name="package"
+                    size={12}
+                    color="#fff"
+                    style={styles.badgeIcon}
+                  />
+                  <Text style={styles.stockBadgeText}>{quantityLabel}</Text>
+                </View>
+              )}
             </View>
           </View>
 
-          <View style={styles.detailsContainer}>
-            <ThemedText type="title" style={styles.productName}>{product.name}</ThemedText>
-            <ThemedText style={styles.description}>{product.description}</ThemedText>
+          {/* Title & price */}
+          <View style={styles.content}>
+            <Text style={styles.collectionLabel}>ARTISAN COLLECTION</Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.productTitle}>{product.name}</Text>
+              <View style={styles.priceBlock}>
+                {product.originalPrice > product.discountedPrice && (
+                  <Text style={styles.originalPrice}>
+                    ${product.originalPrice.toFixed(2)}
+                  </Text>
+                )}
+                <Text style={styles.price}>
+                  ${product.discountedPrice.toFixed(2)}
+                </Text>
+              </View>
+            </View>
 
-            {product.freshnessGuarantee && (
-              <View style={styles.guaranteeBadge}>
-                <IconSymbol name="checkmark.seal" size={16} color="#4caf50" />
-                <ThemedText style={styles.guaranteeText}>Freshness Guarantee</ThemedText>
+            {/* Pickup location */}
+            <Text style={styles.sectionHeading}>Pickup Location</Text>
+            {place ? (
+              <Pressable
+                style={styles.sellerLink}
+                onPress={goToSeller}
+              >
+                <Text style={styles.bakeryName}>{bakeryName}</Text>
+                <Feather name="chevron-right" size={18} color={PRICE_COLOR} />
+              </Pressable>
+            ) : (
+              <Text style={styles.bakeryNameStatic}>{bakeryName}</Text>
+            )}
+            <Text style={styles.bakeryAddress}>{bakeryAddress}</Text>
+            {(offerEnds || quantityLabel) && (
+              <View style={styles.offerMetaRow}>
+                {offerEnds && (
+                  <View
+                    style={[
+                      styles.offerMetaChip,
+                      isUrgent && styles.offerMetaChipUrgent,
+                    ]}
+                  >
+                    <Feather
+                      name="clock"
+                      size={13}
+                      color={isUrgent ? "#C62828" : TEXT_SECONDARY}
+                    />
+                    <Text
+                      style={[
+                        styles.offerMetaText,
+                        isUrgent && styles.offerMetaTextUrgent,
+                      ]}
+                    >
+                      {offerEnds}
+                    </Text>
+                  </View>
+                )}
+                {quantityLabel != null && (
+                  <View style={styles.offerMetaChip}>
+                    <Feather name="package" size={13} color={TEXT_SECONDARY} />
+                    <Text style={styles.offerMetaText}>{quantityLabel}</Text>
+                  </View>
+                )}
               </View>
             )}
-
-            <View style={styles.priceContainer}>
-              <ThemedText style={styles.originalPrice}>Original: ${product.originalPrice}</ThemedText>
-              <ThemedText style={styles.discountedPrice}>Now: ${product.discountedPrice}</ThemedText>
-              <ThemedText style={styles.discount}>({product.discountPercentage}% off)</ThemedText>
+            <View style={styles.readyRow}>
+              <Feather name="clock" size={14} color={TEXT_SECONDARY} />
+              <Text style={styles.readyText}>Ready in 15–20 mins</Text>
             </View>
 
-            <View style={styles.quantityContainer}>
-              <TouchableOpacity style={styles.qtyBtn} onPress={() => setQuantity(Math.max(1, quantity - 1))}>
-                <ThemedText style={styles.qtyBtnText}>-</ThemedText>
-              </TouchableOpacity>
-              <ThemedText style={styles.quantityText}>{quantity}</ThemedText>
-              <TouchableOpacity style={styles.qtyBtn} onPress={() => setQuantity(Math.min(product.quantityLeft, quantity + 1))}>
-                <ThemedText style={styles.qtyBtnText}>+</ThemedText>
-              </TouchableOpacity>
-            </View>
+            {place && (
+              <ErrorBoundary fallbackTitle="Map preview unavailable">
+                <PickupLocationMap place={place} />
+              </ErrorBoundary>
+            )}
 
-            <View style={styles.expiryContainer}>
-              <IconSymbol name="timer" size={16} color="#d32f2f" />
-              <ThemedText style={styles.expiryText}>
-                Discount ends in {Math.floor(product.expiringInHours)}h {Math.max(0, Math.round((product.expiringInHours % 1) * 60))}m
-              </ThemedText>
-            </View>
+            <View style={styles.divider} />
 
-            <TouchableOpacity style={[styles.reserveButton, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]} onPress={() => { addToCart(product, quantity); router.push('/(tabs)/payment'); }}>
-              <ThemedText style={styles.reserveText}>Add to Cart ({quantity})</ThemedText>
-            </TouchableOpacity>
+            <Text style={styles.description}>{product.description}</Text>
 
-            <TouchableOpacity style={[styles.checkoutButton, { backgroundColor: '#fff', borderColor: Colors[colorScheme ?? 'light'].tint, borderWidth: 1, marginTop: 12 }]} onPress={() => router.push('/payment')}>
-              <ThemedText style={[styles.reserveText, { color: Colors[colorScheme ?? 'light'].tint }]}>Checkout</ThemedText>
-            </TouchableOpacity>
+            <Pressable
+              style={({ pressed }) => [
+                styles.ctaBtn,
+                pressed && styles.ctaPressed,
+                product.quantityLeft <= 0 && styles.ctaDisabled,
+              ]}
+              disabled={product.quantityLeft <= 0}
+              onPress={() => {
+                addToCart(product, 1);
+                router.push("/(tabs)/payment" as const);
+              }}
+            >
+              <Text style={styles.ctaText}>
+                {product.quantityLeft <= 0 ? "Sold out" : "Add to Cart"}
+              </Text>
+            </Pressable>
           </View>
         </ScrollView>
       </View>
@@ -102,155 +238,264 @@ export default function ProductDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
+    backgroundColor: BG,
   },
-  scrollView: {
-    flex: 1,
+  notFound: {
+    padding: 24,
+    color: TEXT_PRIMARY,
+    fontSize: 16,
   },
-  customHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: NAV_BG,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    paddingBottom: 10,
   },
-  customBack: {
-    paddingVertical: 1,
+  headerSide: {
+    width: 88,
+    flexDirection: "row",
+    alignItems: "center",
   },
-  customBackText: {
-    fontWeight: 'bold',
-  },
-  customTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  headerPlaceholder: {
-    width: 60,
-  },
-  productImageWrapper: {
-    position: 'relative',
-  },
-  productImage: {
-    width: '100%',
-    height: 250,
-    borderRadius: 16,
-  },
-  imageBadges: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    right: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  imageBadgeText: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  discountBadgeText: {
-    color: '#d32f2f',
-  },
-  productStockText: {
-    color: '#d32f2f',
-  },
-  detailsContainer: {
-    padding: 16,
-  },
-  productName: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 16,
-    marginBottom: 16,
-    color: Colors.light.icon,
-  },
-  guaranteeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#e8f5e9',
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  guaranteeText: {
-    marginLeft: 8,
-    color: '#4caf50',
-    fontWeight: 'bold',
-  },
-  priceContainer: {
-    marginBottom: 16,
-  },
-  originalPrice: {
-    textDecorationLine: 'line-through',
-    color: '#888',
-    fontSize: 16,
-  },
-  discountedPrice: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Colors.light.text,
-  },
-  discount: {
-    color: '#d32f2f',
-    fontWeight: 'bold',
-  },
-  quantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  qtyBtn: {
+  headerBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#e0e0e0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  qtyBtnText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  headerBrand: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 22,
+    fontWeight: "700",
+    color: TEXT_PRIMARY,
+    fontFamily: Platform.select({ ios: "Georgia", android: "serif" }),
+    letterSpacing: -0.3,
   },
-  quantityText: {
+  headerRight: {
+    justifyContent: "flex-end",
+  },
+  headerRightSpacer: {
+    width: 40,
+    height: 40,
+  },
+  scroll: {
+    flex: 1,
+  },
+  heroWrapper: {
+    backgroundColor: BG,
+    paddingHorizontal: 0,
+    paddingBottom: 0,
+  },
+  heroInner: {
+    backgroundColor: HERO_BG,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: "hidden",
+    marginHorizontal: 0,
+  },
+  heroImage: {
+    width: "100%",
+    height: 380,
+  },
+  heroBadgesTop: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    right: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  timeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(45, 41, 38, 0.82)",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    maxWidth: "58%",
+  },
+  timeBadgeUrgent: {
+    backgroundColor: "rgba(180, 30, 45, 0.92)",
+  },
+  timeBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  discountBadge: {
+    backgroundColor: "rgba(180, 30, 45, 0.88)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: "auto",
+  },
+  discountBadgeText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  stockBadge: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(45, 41, 38, 0.82)",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  stockBadgeSoldOut: {
+    backgroundColor: "rgba(100, 100, 100, 0.9)",
+  },
+  stockBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  badgeIcon: {
+    marginRight: 5,
+  },
+  priceBlock: {
+    alignItems: "flex-end",
+    gap: 2,
+  },
+  originalPrice: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: TEXT_SECONDARY,
+    textDecorationLine: "line-through",
+  },
+  content: {
+    backgroundColor: BG,
+    paddingHorizontal: 22,
+    paddingTop: 18,
+  },
+  collectionLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 1.2,
+    color: TEXT_SECONDARY,
+    marginBottom: 10,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 28,
+    gap: 16,
+  },
+  productTitle: {
+    flex: 1,
+    fontSize: 28,
+    fontWeight: "700",
+    color: TEXT_PRIMARY,
+    lineHeight: 34,
+    letterSpacing: -0.5,
+  },
+  price: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: PRICE_COLOR,
+  },
+  sectionHeading: {
     fontSize: 18,
-    fontWeight: 'bold',
-    minWidth: 30,
-    textAlign: 'center',
+    fontWeight: "700",
+    color: TEXT_PRIMARY,
+    marginBottom: 10,
   },
-  expiryContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
+  sellerLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 4,
+    marginBottom: 4,
   },
-  expiryText: {
-    marginLeft: 8,
-    color: '#d32f2f',
-    fontWeight: 'bold',
+  bakeryName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: PRICE_COLOR,
   },
-  reserveButton: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
+  bakeryNameStatic: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: TEXT_PRIMARY,
+    marginBottom: 4,
   },
-  checkoutButton: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
+  bakeryAddress: {
+    fontSize: 14,
+    color: TEXT_SECONDARY,
+    lineHeight: 20,
+    marginBottom: 10,
   },
-  reserveText: {
-    color: Colors.light.accent,
-    fontSize: 18,
-    fontWeight: 'bold',
+  offerMetaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  offerMetaChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#F0EBE4",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  offerMetaChipUrgent: {
+    backgroundColor: "#FFF0F0",
+  },
+  offerMetaText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: TEXT_SECONDARY,
+  },
+  offerMetaTextUrgent: {
+    color: "#C62828",
+  },
+  readyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 16,
+  },
+  readyText: {
+    fontSize: 13,
+    color: TEXT_SECONDARY,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: DIVIDER,
+    marginBottom: 20,
+  },
+  description: {
+    fontSize: 15,
+    lineHeight: 24,
+    color: TEXT_SECONDARY,
+    marginBottom: 28,
+  },
+  ctaBtn: {
+    backgroundColor: PRICE_COLOR,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: "center",
+  },
+  ctaPressed: {
+    opacity: 0.9,
+  },
+  ctaDisabled: {
+    opacity: 0.45,
+  },
+  ctaText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
